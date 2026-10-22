@@ -114,3 +114,37 @@ jobs:
           docker build -t "$IMAGE:${{ github.sha }}" \
             --label org.opencontainers.image.source=$SRC services/orders
           docker push "$IMAGE:${{ github.sha }}"
+
+  integration:
+    name: Связка сервисов
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Поставить зависимости сервиса заказов
+        run: pip install -e "./services/orders[dev]"
+
+      - name: Поднять систему
+        run: docker compose up --build -d
+
+      - name: Дождаться готовности сервисов
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8001/health && curl -sf http://localhost:8002/health && exit 0
+            sleep 2
+          done
+          docker compose logs
+          exit 1
+
+      - name: "Заказ насквозь: клиент на 8001, заказ на 8002"
+        run: pytest -m integration --no-cov
+
+      - name: Погасить сервис клиентов
+        run: docker compose stop accounts
+
+      - name: "Молчащий сосед: 503 не дольше трёх секунд"
+        run: pytest -m accounts_down --no-cov
