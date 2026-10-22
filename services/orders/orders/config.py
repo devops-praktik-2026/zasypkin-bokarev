@@ -11,7 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    service_name: str = "orders"
+    service_name: str = "orders"  # имя для /health
 
     # По умолчанию — файл рядом с проектом, чтобы сервис запускался без Docker.
     # В compose.yaml сюда подставляется адрес PostgreSQL.
