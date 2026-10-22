@@ -1,6 +1,6 @@
 """Запросы, которые умеет обрабатывать сервис заказов."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from orders.db import get_session
@@ -8,6 +8,16 @@ from orders.models import Order
 from orders.schemas import OrderCreate, OrderRead
 
 router = APIRouter(prefix="/orders", tags=["Заказы"])
+
+
+def _get_or_404(session: Session, order_id: int) -> Order:
+    order = session.get(Order, order_id)
+    if order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Заказ {order_id} не найден",
+        )
+    return order
 
 
 @router.post(
@@ -22,3 +32,8 @@ def create_order(payload: OrderCreate, session: Session = Depends(get_session)) 
     session.commit()
     session.refresh(order)
     return order
+
+
+@router.get("/{order_id}", response_model=OrderRead, summary="Получить заказ")
+def get_order(order_id: int, session: Session = Depends(get_session)) -> Order:
+    return _get_or_404(session, order_id)
