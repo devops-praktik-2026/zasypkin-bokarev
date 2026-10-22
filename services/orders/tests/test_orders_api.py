@@ -55,3 +55,34 @@ def test_get_missing_order_returns_404_with_number(client, order_payload):
 
     assert response.status_code == 404
     assert str(missing_id) in response.json()["detail"]
+
+
+def test_list_orders_returns_only_this_account(client, order_payload):
+    order_payload |= {"account_id": 7}
+    mine = [client.post("/orders", json=order_payload).json()["id"] for _ in range(3)]
+    other = order_payload | {"account_id": 8}
+    client.post("/orders", json=other)
+
+    response = client.get("/orders", params={"account_id": 7})
+
+    assert response.status_code == 200
+    ids = [order["id"] for order in response.json()]
+    assert ids == mine
+
+
+def test_list_orders_empty_account_returns_200_and_empty_list(client):
+    response = client.get("/orders", params={"account_id": 99})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_orders_limit(client, order_payload):
+    order_payload |= {"account_id": 7}
+    for _ in range(5):
+        client.post("/orders", json=order_payload)
+
+    response = client.get("/orders", params={"account_id": 7, "limit": 2})
+
+    assert response.status_code == 200
+    assert len(response.json()) == 2
