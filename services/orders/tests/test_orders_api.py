@@ -31,3 +31,27 @@ def test_invalid_payload_returns_422(client, order_payload, broken_field):
     response = client.post("/orders", json=payload)
 
     assert response.status_code == 422
+
+
+def test_get_order_returns_200_and_card(client, order_payload):
+    created = client.post("/orders", json=order_payload).json()
+
+    response = client.get(f"/orders/{created['id']}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == created["id"]
+    assert body["account_id"] == order_payload["account_id"]
+    assert body["item"] == order_payload["item"]
+    assert body["quantity"] == order_payload["quantity"]
+    assert body["created_at"]
+
+
+def test_get_missing_order_returns_404_with_number(client, order_payload):
+    created = client.post("/orders", json=order_payload).json()
+    missing_id = created["id"] + 100
+
+    response = client.get(f"/orders/{missing_id}")
+
+    assert response.status_code == 404
+    assert str(missing_id) in response.json()["detail"]
