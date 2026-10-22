@@ -6,6 +6,7 @@
 
 from collections.abc import Iterator
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -53,9 +54,15 @@ def fake_accounts(monkeypatch: pytest.MonkeyPatch) -> None:
         def __init__(self, status_code: int) -> None:
             self.status_code = status_code
 
+        def raise_for_status(self) -> None:
+            if self.status_code >= 400:
+                raise httpx.HTTPStatusError("unexpected", request=None, response=None)
+
     def fake_get(url: str, timeout: float | None = None) -> FakeResponse:
         if url.endswith("/999"):
             return FakeResponse(404)
+        if url.endswith("/500"):
+            raise httpx.ConnectError("сервис клиентов не отвечает")
         return FakeResponse(200)
 
     from orders import accounts_client
