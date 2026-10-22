@@ -86,3 +86,24 @@ def test_list_orders_limit(client, order_payload):
 
     assert response.status_code == 200
     assert len(response.json()) == 2
+
+
+def test_create_order_for_missing_account_returns_404(client, order_payload):
+    """Клиента с номером 999 нет — заказ в никуда создавать нельзя.
+
+    Ответ сервиса клиентов подменяется: клиент 999 не существует.
+    """
+    payload = order_payload | {"account_id": 999}
+
+    response = client.post("/orders", json=payload)
+
+    assert response.status_code == 404
+
+
+def test_create_order_when_accounts_silent_returns_503(client, order_payload):
+    """Сервис клиентов не отвечает — заказы отвечают 503, а не виснут."""
+    payload = order_payload | {"account_id": 500}
+
+    response = client.post("/orders", json=payload)
+
+    assert response.status_code == 503
