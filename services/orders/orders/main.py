@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from orders.api import router
 from orders.config import settings
+from orders.db import Base, engine
 
 app = FastAPI(
     title="Сервис заказов",
@@ -17,6 +18,11 @@ app = FastAPI(
 )
 
 app.include_router(router)
+
+# Структура базы создаётся при старте. Миграции появятся на этапе 4;
+# пока таблица одна, этого достаточно, чтобы сервис работал в compose.
+
+Base.metadata.create_all(bind=engine)
 
 
 class HealthRead(BaseModel):
