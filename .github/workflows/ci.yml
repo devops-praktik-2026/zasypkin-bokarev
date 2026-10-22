@@ -141,10 +141,10 @@ jobs:
           exit 1
 
       - name: "Заказ насквозь: клиент на 8001, заказ на 8002"
-        run: pytest -m integration --no-cov
+        run: pytest services/orders/tests/integration -m integration --no-cov
 
       - name: Погасить сервис клиентов
         run: docker compose stop accounts
 
       - name: "Молчащий сосед: 503 не дольше трёх секунд"
-        run: pytest -m accounts_down --no-cov
+        run: pytest services/orders/tests/integration -m accounts_down --no-cov
